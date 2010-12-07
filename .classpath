@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="source"/>
+	<classpathentry kind="lib" path="jdk/jre/lib/rt.jar" sourcepath="jdk/src.zip"/>
+	<classpathentry kind="lib" path="lib/com.qotsa.JavaWinampAPI/JavaWinampAPI.jar">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="PartyDJ/lib/com.qotsa.JavaWinampAPI"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="classes"/>
+</classpath>
