@@ -37,16 +37,16 @@ public enum PlaylistManager {
    
    public static final int MIN_QUEUE_SIZE = 3;
    
-   private static final ScheduledExecutorService CHECKER_POOL = Executors.newScheduledThreadPool(1);
+   private static final ScheduledExecutorService CHECKER_POOL = Executors.newScheduledThreadPool(1, NamedThreadFactory.createDaemonFactory("PlaylistManager"));
    private QueueChecker CHECKER = new QueueChecker();
    
    private Queue<MediaFile> requestQueue = new ConcurrentLinkedQueue();
-   private List<MediaFile> songPool;
+   private List<MediaFile> songPool = Collections.emptyList();
    private int poolPointer = 0;
    private Map<MediaFile, Integer> playCount = new ConcurrentHashMap<MediaFile, Integer>();
    private Map<MediaFile, Long> lastPlayed = new ConcurrentHashMap<MediaFile, Long>();
 
-   public void start(File songPoolSource) {
+   void start(File songPoolSource) {
       Player player = PartyDJ.getInstance().getPlayer();
       player.ensureAvailable();
       if (songPoolSource != null && songPoolSource.exists()) {
@@ -60,6 +60,21 @@ public enum PlaylistManager {
          }
       }
       queueNext(MIN_QUEUE_SIZE - player.getPlayQueueSize());
+   }
+   
+   public List<MediaFile> find(String regex) {
+      if (regex == null || regex.length() == 0) {
+         return Collections.unmodifiableList(songPool);
+      } else {
+         Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+         List<MediaFile> found = new ArrayList();
+         for (MediaFile file : songPool) {
+            if (pattern.matcher(file.getSimpleName()).find()) {
+               found.add(file);
+            }
+         }
+         return found;
+      }
    }
    
    static final FileFilter POOL_FILE_FILTER = new FileFilter() {

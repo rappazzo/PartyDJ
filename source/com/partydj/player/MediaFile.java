@@ -23,6 +23,7 @@
 package com.partydj.player;
 
 import java.io.*;
+import java.util.regex.*;
 import org.cmc.music.metadata.*;
 import org.cmc.music.myid3.*;
 
@@ -64,7 +65,7 @@ public class MediaFile {
    public IMusicMetadata getMetadata() {
       return metadata;
    }
-
+   
    @Override public int hashCode() {
       final int prime = 31;
       int result = 1;
@@ -85,6 +86,10 @@ public class MediaFile {
    
    @Override public String toString() {
       return file.getAbsolutePath();
+   }
+   
+   public String getSimpleName() {
+      return getMetadata() != null ? getMetadata().getArtist() +" - "+ getMetadata().getAlbum() + " - " + getMetadata().getSongTitle() : "".intern();
    }
    
 }
