@@ -1,0 +1,9 @@
+#ignore other scm files
+.svn
+.hg
+
+# codebase
+classes
+
+# bin/
+
