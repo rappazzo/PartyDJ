@@ -45,7 +45,7 @@ public class TestWinampOperations {
             }
          });
          
-         Winamp winamp = Winamp.INSTANCE;
+         Winamp winamp = new Winamp();
          winamp.ensureAvailable();
          
          //setup

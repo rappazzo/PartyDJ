@@ -29,8 +29,7 @@ import com.qotsa.jni.controller.*;
 /**
  * 
  **/
-public enum Winamp implements Player {
-   INSTANCE;
+public class Winamp implements Player {
    
    @Override public int getTotalQueueLengthInSeconds() {
       Collection<MediaFile> currentQueue = getPlayQueue();
@@ -66,6 +65,12 @@ public enum Winamp implements Player {
       try {
          if (status == -1) {
             WinampController.run();
+         }
+         int waitTime = 0;
+         final int maxWaitTime = 10000;
+         while (waitTime < maxWaitTime && status == -1) {
+            Thread.sleep(2000);
+            try {status = WinampController.getStatus();} catch (InvalidHandle e) {}
          }
       } catch (Exception e) {
          throw new RuntimeException("Exception starting winamp", e);

@@ -57,7 +57,7 @@ public class Config {
     */
    public String getProperty(String... key) {
       String value = config.getProperty(buildPropertyKey(key));
-      if ("".equals(value)) {
+      if (value == null || value.length() == 0) {
          value = null;
       }
       return value;
@@ -67,15 +67,19 @@ public class Config {
     * build a property key from the given variable key arguements
     */
    public String buildPropertyKey(String... keys) {
-      if (keys != null) {
-         StringBuilder propertyKey = new StringBuilder();
-         for (String key : keys) {
-            if (propertyKey.length() > 0) {
-               propertyKey.append(SEPARATOR);
+      if (keys != null && keys.length > 0) {
+         if (keys.length == 1) {
+            return keys[0];
+         } else {
+            StringBuilder propertyKey = new StringBuilder();
+            for (String key : keys) {
+               if (propertyKey.length() > 0) {
+                  propertyKey.append(SEPARATOR);
+               }
+               propertyKey.append(key);
             }
-            propertyKey.append(key);
+            return propertyKey.toString();
          }
-         return propertyKey.toString();
       }
       return null;
    }
@@ -105,6 +109,7 @@ public class Config {
             Class clazz = Class.forName(className);
             return clazz.newInstance();
          } catch (Exception e) {
+            e.printStackTrace();
          }
       }
       return null;

@@ -23,6 +23,7 @@
 package com.partydj.server;
 
 import java.io.*;
+import com.partydj.io.*;
 import com.partydj.player.*;
 
 /**
@@ -31,10 +32,10 @@ import com.partydj.player.*;
 public class PartyDJ {
    private static PartyDJ INSTANCE;
    
-   private Config config;
    private Player player;
+   private Object monitor = new Object();
    
-   private PartyDJ(Config config) {
+   private PartyDJ() {
       PartyDJ.INSTANCE = this;
    }
    public static PartyDJ getInstance() {
@@ -42,22 +43,29 @@ public class PartyDJ {
    }
    
    /**
-    * @return the config
-    */
-   Config getConfig() {
-      return config;
-   }
-   
-   /**
     * @return the player
     */
    public Player getPlayer() {
+      if (this.player == null) {
+         this.player = (Player)Config.config().getClassProperty(ConfigKeys.PLAYER_CLASS);
+      }
       return this.player;
    }
    
    public void run() {
-      String poolFile = config.getProperty(ConfigKeys.MUSIC_POOL);
+      String poolFile = Config.config().getProperty(ConfigKeys.MUSIC_POOL);
       PlaylistManager.INSTANCE.start(new File(poolFile));
+      Http.create().start();
+
+      try {
+         synchronized (monitor) {
+            while (true) {
+               monitor.wait();
+            }
+         }
+      } catch (InterruptedException e) {
+         //ignore -- this is how it shuts down.
+      }
    }
 
    public static void main(String[] args) {
@@ -65,7 +73,8 @@ public class PartyDJ {
          System.out.println("Missing Config");
          System.exit(1);
       }
-      PartyDJ partyDJ = new PartyDJ(Config.create(args[0]));
+      Config.create(args[0]);
+      PartyDJ partyDJ = new PartyDJ();
       partyDJ.run();
    }
    

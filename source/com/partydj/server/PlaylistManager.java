@@ -41,10 +41,12 @@ public enum PlaylistManager {
    private QueueChecker CHECKER = new QueueChecker();
    
    private Queue<MediaFile> requestQueue = new ConcurrentLinkedQueue();
+   //$MR this should probably be concurrent:
    private List<MediaFile> songPool = Collections.emptyList();
    private int poolPointer = 0;
    private Map<MediaFile, Integer> playCount = new ConcurrentHashMap<MediaFile, Integer>();
    private Map<MediaFile, Long> lastPlayed = new ConcurrentHashMap<MediaFile, Long>();
+   private Collection<MediaFile> history = new ConcurrentLinkedQueue();
 
    void start(File songPoolSource) {
       Player player = PartyDJ.getInstance().getPlayer();
@@ -55,7 +57,7 @@ public enum PlaylistManager {
          } else {
             songPool = createPoolFromPlaylist(songPoolSource);
          }
-         if (PartyDJ.getInstance().getConfig().getBooleanProperty(ConfigKeys.RANDOMIZE_POOL)) {
+         if (Config.config().getBooleanProperty(ConfigKeys.RANDOMIZE_POOL)) {
             Collections.shuffle(songPool);
          }
       }
@@ -166,9 +168,9 @@ public enum PlaylistManager {
    }
    
    protected MediaFile getNextMediaFile() {
-      if (requestQueue.size() > 0) {
+      if (!requestQueue.isEmpty()) {
          return requestQueue.poll();
-      } else if (songPool.size() > 0) {
+      } else if (!songPool.isEmpty()) {
          MediaFile next = songPool.get(poolPointer++);
          if (poolPointer >= songPool.size()) {
             poolPointer = 0;
@@ -204,6 +206,7 @@ public enum PlaylistManager {
             MediaFile file = getNextMediaFile();
             if (file != null && allowQueue(file)) {
                increasePlayCount(file);
+               history.add(file);
                next = player.addToQueue(file);
                added = true;
             }
@@ -236,11 +239,15 @@ public enum PlaylistManager {
    }
 
    private int getMaxAllowedPlayCount() {
-      return PartyDJ.getInstance().getConfig().getIntProperty(ConfigKeys.MAX_ALLOWED_PLAY_COUNT);
+      return Config.config().getIntProperty(ConfigKeys.MAX_ALLOWED_PLAY_COUNT);
    }
    
    private int getReplayTimeThreshhold() {
-      return PartyDJ.getInstance().getConfig().getIntProperty(ConfigKeys.REPLAY_TIME_THRESHHOLD);
+      return Config.config().getIntProperty(ConfigKeys.REPLAY_TIME_THRESHHOLD);
+   }
+   
+   public Collection<MediaFile> getHistory() {
+      return Collections.unmodifiableCollection(history);
    }
 
    class QueueChecker implements Runnable {

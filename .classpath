@@ -7,5 +7,6 @@
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="PartyDJ/lib/com.qotsa.JavaWinampAPI"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="lib/javax.servlet/servlet.jar" sourcepath="lib/javax.servlet/servlet-src.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
