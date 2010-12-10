@@ -72,7 +72,7 @@ public interface Player {
     * @return a collection of info about the media in the queue which is playing or remains to be played
     *         (the returned collection may be empty; a null value should NOT be expected)
     */
-   Collection<MediaFile> getPlayQueue();
+   List<MediaFile> getPlayQueue();
    
    /**
     * @retrun the queue length in seconds

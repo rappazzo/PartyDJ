@@ -60,6 +60,16 @@ public class FileServlet extends BaseServlet {
          }
       }
    }
+   
+   @Override protected String getContentType(HttpServletRequest servletRequest) {
+      String request = servletRequest.getRequestURI().toLowerCase();
+      if (request.endsWith("css")) {
+         return "text/css";
+      } else if (request.endsWith("js")) {
+         return "text/javascript";
+      }
+      return servletRequest.getContentType();
+   }
 
    @Override protected ChunkedByteBuffer getResponseContents(HttpServletRequest servletRequest, Socket httpConnection) {
       ChunkedByteBuffer response = new ChunkedByteBuffer();
@@ -68,7 +78,7 @@ public class FileServlet extends BaseServlet {
          String[] uriParts = uri.substring(1).split("[/\\ ]+");
          
          StringBuilder docPath = new StringBuilder();
-         for (int i = 1; i < uriParts.length; i++) {
+         for (int i = 0; i < uriParts.length; i++) {
             docPath.append("/");
             docPath.append(uriParts[i]);
          }

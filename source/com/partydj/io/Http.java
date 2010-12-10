@@ -58,7 +58,7 @@ public class Http {
          this.port = altPort;
       }
       //File servlet should ALWAYS be last in the servlet list
-//      servlets.add(new PlayerServlet());
+      servlets.add(new PlayerServlet());
       servlets.add(new FileServlet());
    }
    
@@ -100,12 +100,14 @@ public class Http {
             PrintStream outStream = new PrintStream(listener.getOutputStream());
             listener.setSoTimeout(0);
             listener.setTcpNoDelay(true);
-            DefaultHttpServletRequest servletRequest = new DefaultHttpServletRequest(inStream);
+            DefaultHttpServletRequest servletRequest = DefaultHttpServletRequest.create(inStream);
             try {
-               for (SimpleServlet servlet : servlets) {
-                  if (servlet.accept(servletRequest, listener)) {
-                     servlet.handle(servletRequest, outStream, listener);
-                     break;
+               if (servletRequest != null) {
+                  for (SimpleServlet servlet : servlets) {
+                     if (servlet.accept(servletRequest, listener)) {
+                        servlet.handle(servletRequest, outStream, listener);
+                        break;
+                     }
                   }
                }
             } finally {

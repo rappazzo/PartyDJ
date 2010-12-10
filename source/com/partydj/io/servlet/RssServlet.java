@@ -63,11 +63,10 @@ public class RssServlet extends BaseServlet {
 //         rssItems.append(history.toRssItem());
 //      }
       try {
-         Writer writer = new PrintWriter(outStream);
          if (rssItems.length() > 0) {
             ChunkedByteBuffer feed = new ChunkedByteBuffer();
             feed.append(String.format(RSS_TEMPLATE, "http://soundboard/", rssItems.toString()).getBytes());
-            createResponseHeader(feed.length()).writeTo(outStream);
+            createResponseHeader(servletRequest, feed.length()).writeTo(outStream);
             feed.writeTo(outStream);
          }
       } catch (IOException e) {

@@ -73,7 +73,7 @@ public class BaseServlet implements SimpleServlet {
       ChunkedByteBuffer responseContent = getResponseContents(servletRequest, httpConnection);
       try {
          if (responseContent.length() > 0) {
-            createResponseHeader(responseContent.length()).writeTo(outStream);
+            createResponseHeader(servletRequest, responseContent.length()).writeTo(outStream);
             responseContent.writeTo(outStream);
          }
       } catch (IOException e) {
@@ -81,7 +81,7 @@ public class BaseServlet implements SimpleServlet {
       }
    }
    
-   protected final ChunkedByteBuffer createResponseHeader(int size) {
+   protected final ChunkedByteBuffer createResponseHeader(HttpServletRequest servletRequest, int size) {
       ChunkedByteBuffer responseHeader = new ChunkedByteBuffer();
       try {
          //send back the results
@@ -96,7 +96,8 @@ public class BaseServlet implements SimpleServlet {
          responseHeader.append(EOL);
          responseHeader.append("Last Modified: " + (new Date()));
          responseHeader.append(EOL);
-         responseHeader.append("Content-type: text/html");
+         responseHeader.append("Content-type: ");
+         responseHeader.append(getContentType(servletRequest));
          responseHeader.append(EOL);
          responseHeader.append(EOL);
 
@@ -106,6 +107,10 @@ public class BaseServlet implements SimpleServlet {
       return responseHeader;
    }
    
+   protected String getContentType(HttpServletRequest servletRequest) {
+      return "text/html";
+   }
+
    protected ChunkedByteBuffer getResponseContents(HttpServletRequest servletRequest, Socket httpConnection) {
       ChunkedByteBuffer response = new ChunkedByteBuffer();
       try {

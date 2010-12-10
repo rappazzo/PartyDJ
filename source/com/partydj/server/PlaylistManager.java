@@ -26,6 +26,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.*;
+import javax.sound.sampled.*;
 import com.partydj.player.*;
 import com.partydj.util.*;
 
@@ -37,12 +38,12 @@ public enum PlaylistManager {
    
    public static final int MIN_QUEUE_SIZE = 3;
    
-   private static final ScheduledExecutorService CHECKER_POOL = Executors.newScheduledThreadPool(1, NamedThreadFactory.createDaemonFactory("PlaylistManager"));
+   private static final ScheduledExecutorService CHECKER_POOL = Executors.newScheduledThreadPool(1, NamedThreadFactory.createDaemonFactory("Playlist Manager"));
    private QueueChecker CHECKER = new QueueChecker();
    
    private Queue<MediaFile> requestQueue = new ConcurrentLinkedQueue();
    //$MR this should probably be concurrent:
-   private List<MediaFile> songPool = Collections.emptyList();
+   private List<MediaFile> songPool = new ArrayList();
    private int poolPointer = 0;
    private Map<MediaFile, Integer> playCount = new ConcurrentHashMap<MediaFile, Integer>();
    private Map<MediaFile, Long> lastPlayed = new ConcurrentHashMap<MediaFile, Long>();
@@ -53,9 +54,9 @@ public enum PlaylistManager {
       player.ensureAvailable();
       if (songPoolSource != null && songPoolSource.exists()) {
          if (songPoolSource.isDirectory()) {
-            songPool = createPoolFromDirectory(songPoolSource, new ArrayList());
+            createPoolFromDirectory(songPoolSource);
          } else {
-            songPool = createPoolFromPlaylist(songPoolSource);
+            createPoolFromPlaylist(songPoolSource);
          }
          if (Config.config().getBooleanProperty(ConfigKeys.RANDOMIZE_POOL)) {
             Collections.shuffle(songPool);
@@ -71,7 +72,7 @@ public enum PlaylistManager {
          Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
          List<MediaFile> found = new ArrayList();
          for (MediaFile file : songPool) {
-            if (pattern.matcher(file.getSimpleName()).find()) {
+            if (pattern.matcher(file.getSearchableString()).find()) {
                found.add(file);
             }
          }
@@ -100,20 +101,19 @@ public enum PlaylistManager {
       }
    };
    
-   private List<MediaFile> createPoolFromDirectory(File songPoolSource, List<MediaFile> list) {
+   private List<MediaFile> createPoolFromDirectory(File songPoolSource) {
       File[] files = songPoolSource.listFiles(POOL_FILE_FILTER);
       for (File file : files) {
          if (file.isDirectory()) {
-            createPoolFromDirectory(file, list);
+            createPoolFromDirectory(file);
          } else {
-            list.add(MediaFile.create(file));
+            songPool.add(MediaFile.create(file));
          }
       }
       return null;
    }
    
-   private List<MediaFile> createPoolFromPlaylist(File songPoolSource) {
-      List<MediaFile> songPool = new ArrayList();
+   private void createPoolFromPlaylist(File songPoolSource) {
       try {
          ChunkedCharBuffer fileContents = new ChunkedCharBuffer();
          final FileReader fr = new FileReader(songPoolSource);
@@ -136,7 +136,6 @@ public enum PlaylistManager {
          System.out.println("Error reading playlist file: " + e.getMessage());
          e.printStackTrace();
       }
-      return songPool;
    }
 
    public int request(MediaFile file) {
@@ -148,7 +147,14 @@ public enum PlaylistManager {
                totalSeconds += requestItem.getMetadata().getDurationSeconds().intValue();
             } catch (Exception e) {
                System.out.println("Error determining track time for " + requestItem);
-               totalSeconds += 5;
+               AudioFileFormat baseFileFormat;
+               try {
+                  baseFileFormat = AudioSystem.getAudioFileFormat(requestItem.getFile());
+                  Map properties = baseFileFormat.properties();
+                  totalSeconds += (Long) properties.get("duration");
+               } catch (Exception e1) {
+                  totalSeconds += 5;
+               }
             }
          }
          requestQueue.add(file);
@@ -198,10 +204,10 @@ public enum PlaylistManager {
    }
    
    protected final void queueNext(int size) {
+      boolean added = false;
+      int next = 5;
+      Player player = PartyDJ.getInstance().getPlayer();
       if (size > 0) {
-         Player player = PartyDJ.getInstance().getPlayer();
-         int next = 5;
-         boolean added = false;
          for (int i = 0; i < size; i++) {
             MediaFile file = getNextMediaFile();
             if (file != null && allowQueue(file)) {
@@ -211,11 +217,12 @@ public enum PlaylistManager {
                added = true;
             }
          }
-         if (added) {
-            player.ensurePlaying();
-            CHECKER_POOL.schedule(CHECKER, next, TimeUnit.SECONDS);
-         }
       }
+      if (!added) {
+         next = 15;
+      }
+      player.ensurePlaying();
+      CHECKER_POOL.schedule(CHECKER, next, TimeUnit.SECONDS);
    }
    
    private boolean allowQueue(MediaFile file) {
@@ -228,7 +235,7 @@ public enum PlaylistManager {
       }
       long lastPlayed = getLastPlayed(file);
       return file != null &&
-         playCount < getMaxAllowedPlayCount() &&
+         (getMaxAllowedPlayCount() == null || playCount < getMaxAllowedPlayCount().intValue()) &&
          (lastPlayed == -1 || lastPlayed > getReplayTimeThreshhold())
       ;
    }
@@ -238,8 +245,8 @@ public enum PlaylistManager {
       return lastTS != null ? System.currentTimeMillis() - lastTS.intValue() : -1;
    }
 
-   private int getMaxAllowedPlayCount() {
-      return Config.config().getIntProperty(ConfigKeys.MAX_ALLOWED_PLAY_COUNT);
+   private Integer getMaxAllowedPlayCount() {
+      return Config.config().getIntegerProperty(ConfigKeys.MAX_ALLOWED_PLAY_COUNT);
    }
    
    private int getReplayTimeThreshhold() {

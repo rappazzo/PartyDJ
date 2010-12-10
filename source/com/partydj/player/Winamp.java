@@ -23,6 +23,7 @@
 package com.partydj.player;
 
 import java.util.*;
+import javax.sound.sampled.*;
 import com.qotsa.exception.*;
 import com.qotsa.jni.controller.*;
 
@@ -39,7 +40,14 @@ public class Winamp implements Player {
             totalSeconds += track.getMetadata().getDurationSeconds().intValue();
          } catch (Exception e) {
             System.out.println("Error determining track time for " + track);
-            totalSeconds += 5;
+            AudioFileFormat baseFileFormat;
+            try {
+               baseFileFormat = AudioSystem.getAudioFileFormat(track.getFile());
+               Map properties = baseFileFormat.properties();
+               totalSeconds += (Long) properties.get("duration");
+            } catch (Exception e1) {
+               totalSeconds += 5;
+            }
          }
       }
       return totalSeconds;
@@ -115,7 +123,7 @@ public class Winamp implements Player {
       }
    }
 
-   @Override public Collection<MediaFile> getPlayQueue() {
+   @Override public List<MediaFile> getPlayQueue() {
       List<MediaFile> queue = new ArrayList();
       try {
          int pos = WinampController.getListPos();
