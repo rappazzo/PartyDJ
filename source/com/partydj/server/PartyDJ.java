@@ -25,6 +25,7 @@ package com.partydj.server;
 import java.io.*;
 import com.partydj.io.*;
 import com.partydj.player.*;
+import com.partydj.search.*;
 
 /**
  * 
@@ -32,8 +33,9 @@ import com.partydj.player.*;
 public class PartyDJ {
    private static PartyDJ INSTANCE;
    
-   private Player player;
+   private Player player = null;
    private Object monitor = new Object();
+   private SearchProvider searchProvider = null;
    
    private PartyDJ() {
       PartyDJ.INSTANCE = this;
@@ -50,6 +52,20 @@ public class PartyDJ {
          this.player = (Player)Config.config().getClassProperty(ConfigKeys.PLAYER_CLASS);
       }
       return this.player;
+   }
+   
+   /**
+    * @return the player
+    */
+   public SearchProvider getSearchProvider() {
+      if (this.searchProvider == null) {
+         if (Config.config().getProperty(ConfigKeys.SEARCH_PROVIDER) != null) {
+            this.searchProvider = (SearchProvider)Config.config().getClassProperty(ConfigKeys.SEARCH_PROVIDER);
+         } else {
+            this.searchProvider = new RegexSearchProvider();
+         }
+      }
+      return this.searchProvider;
    }
    
    public void run() {

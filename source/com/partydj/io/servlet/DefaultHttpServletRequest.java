@@ -24,6 +24,7 @@ import java.text.*;
 import java.util.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
+import com.google.common.collect.*;
 import com.partydj.util.*;
 
 /**
@@ -35,15 +36,18 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
 
    ChunkedByteBuffer requestBytes = new ChunkedByteBuffer();
 
-   private Map<String, Set<String>> parameterMap = new HashMap<String, Set<String>>();
+   private Multimap<String, String> parameterMap = HashMultimap.create();
    private Map<String, MultipartData> multipartParameterMap = new HashMap<String, MultipartData>();
    private String method = null;
    private String requestedURI = null;
+   private String queryString = null;
    private String httpVersionInfo = null;
    private String contentType = null;
    private Map<String, String> headerMap = new HashMap<String, String>();
 
-   public static DefaultHttpServletRequest create(InputStream inStream) {
+   private String remoteAddress;
+
+   public static DefaultHttpServletRequest create(InputStream inStream, InetAddress address) {
       try {
          DefaultHttpServletRequest request = new DefaultHttpServletRequest();
          //should we check for inStream.available()?
@@ -58,6 +62,7 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
                return null;
             }
          }
+         request.remoteAddress = address.getHostAddress();
          ServletInputStream in = request.getInputStream();
          byte[] buffer = new byte[1024];
 
@@ -72,6 +77,16 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
             request.requestedURI = URLDecoder.decode(request.requestedURI);
             if (request.requestedURI == null) {
                request.requestedURI = requestStart.substring(requestStart.indexOf(" ") + 1, requestStart.lastIndexOf(" "));
+            }
+         }
+         String[] parts = request.requestedURI.split("\\?", 2);
+         if (parts.length > 1) {
+            request.requestedURI = parts[0];
+            request.queryString = parts[1];
+            String[] paramKV = parts[1].split("&");
+            for (String kv : paramKV) {
+               String[] kAndV = kv.split("=");
+               request.parameterMap.put(kAndV[0], kAndV.length > 1 ? kAndV[1] : null);
             }
          }
          request.httpVersionInfo = requestStart.substring(requestStart.lastIndexOf(" ") + 1);
@@ -92,7 +107,7 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
 
          //do special processing for POST form data with multipart encoding
          String contentType = request.getHeader(HttpConstants.CONTENT_TYPE);
-         if (HttpConstants.POST.equalsIgnoreCase(request.getMethod()) && contentType.startsWith(HttpConstants.MULTIPART)) {
+         if (HttpConstants.POST.equalsIgnoreCase(request.getMethod()) && contentType != null && contentType.startsWith(HttpConstants.MULTIPART)) {
             //seek the boundary marker
             String boundaryMarker = null;
             for (String contentTypeData : contentType.split("; ?")) {
@@ -143,12 +158,7 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
                request.multipartParameterMap.put(dataKey, multipart);
                //if the multipart has no content type, then it is likely just normal, form data.  Try to put it in the regular parameter map.
                if (multipart.getHeader(HttpConstants.CONTENT_TYPE) == null) {
-                  Set<String> values = request.parameterMap.get(dataKey);
-                  if (values == null) {
-                     values = new HashSet<String>();
-                     request.parameterMap.put(dataKey, values);
-                  }
-                  values.add(multipartBinaryData.toChunkedCharBuffer().toString());
+                  request.parameterMap.put(dataKey, multipartBinaryData.toChunkedCharBuffer().toString());
                }
             }
          } else {
@@ -280,7 +290,7 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
     * @see javax.servlet.http.HttpServletRequest#getQueryString()
     */
    public String getQueryString() {
-      return null;
+      return queryString;
    }
 
    /* (non-Javadoc)
@@ -445,7 +455,7 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
     */
    public String getParameter(String key) {
       String value = null;
-      Set<String> valueSet = parameterMap.get(key);
+      Collection<String> valueSet = parameterMap.get(key);
       if (valueSet != null) {
          value = valueSet.iterator().next();
       }
@@ -456,7 +466,7 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
     * @see javax.servlet.ServletRequest#getParameterMap()
     */
    public Map getParameterMap() {
-      return parameterMap;
+      return parameterMap.asMap();
    }
 
    /* (non-Javadoc)
@@ -471,7 +481,7 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
     */
    public String[] getParameterValues(String key) {
       String[] values = null;
-      Set<String> valueSet = parameterMap.get(key);
+      Collection<String> valueSet = parameterMap.get(key);
       if (valueSet != null) {
          values = valueSet.toArray(new String[valueSet.size()]);
       }
@@ -503,7 +513,7 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
     * @see javax.servlet.ServletRequest#getRemoteAddr()
     */
    public String getRemoteAddr() {
-      return null;
+      return remoteAddress;
    }
 
    /* (non-Javadoc)
@@ -594,12 +604,7 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
                   value = keyAndValue[1];
                }
             }
-            Set<String> values = parameterMap.get(key);
-            if (values == null) {
-               values = new HashSet<String>();
-               parameterMap.put(key, values);
-            }
-            values.add(value);
+            parameterMap.put(key, value);
          }
       }
    }

@@ -14,8 +14,8 @@
    </script>
    <script language="javascript">
      function updateNowPlaying() {
-        new Ajax.Request('/player/queue/5', {
-		   method: 'get',
+        new Ajax.Request('/player/queue', {
+		   parameters: {size: 5},
 		   onSuccess: function(transport) {
 		      var json = transport.responseText.evalJSON();
 			  var table = new Element('table').insert( 
@@ -38,23 +38,97 @@
 				 );
 			  }
 		      $('playQueue').update(table);
-			  //IE sucks code
-				if (Prototype.Browser.IE){
-				   var ieRowNum = 0;
-				   $$('table tbody > tr:nth-child(even)').each(
-					  function(row){
-						 Element.addClassName(row, 'evenRow');
-					  }
-				   );
-				   $$('table tbody > tr:nth-child(odd)').each(
-					  function(row){
-						 Element.addClassName(row, "oddRow");
-					  }
-				   );
-				}
+			  ieSucks();
 		   }
 	    });
 		updateNowPlaying.delay(5);
+	  }
+      function doQuery() {
+	    new Ajax.Request('/player/search', {
+		   parameters: {any: $('query').getValue()},
+		   onSuccess: function(transport) {
+		      var json = transport.responseText.evalJSON();
+			  var table = new Element('table').insert( 
+			     new Element('thead')
+				    .insert(new Element('th').update("&nbsp;"))
+				    .insert(new Element('th').update("Artist"))
+				    .insert(new Element('th').update("Album"))
+				    .insert(new Element('th').update("Song"))
+				    .insert(new Element('th').update("Length"))
+			  );
+			  var tbody = new Element('tbody');
+			  table.insert(tbody);
+			  for (i = 0; i < json.length; i++) {
+			     tbody.insert(new Element('tr')
+				    .insert(new Element('td').update( new Element('input', {'type':'button','onclick': 'javascript: doRequest(\''+ json[i].fileName.gsub('\\', '\\\\') +'\')', 'class': 'requestButton', 'value':'request' } ) ))
+				    .insert(new Element('td').update(json[i].metadata.artist))
+				    .insert(new Element('td').update(json[i].metadata.album))
+				    .insert(new Element('td').update(json[i].metadata.title))
+				    .insert(new Element('td').update(json[i].metadata.length))
+				 );
+			  }
+		      $('searchResults').update(table);
+			  ieSucks();
+		   }
+		});
+	  }
+      function doRequest(requestFileName) {
+	    new Ajax.Request('/player/request', {parameters: {fileName: requestFileName}});
+		tabControl.setActiveTab('requests');
+	  }
+      function updateRequests() {
+        new Ajax.Request('/player/listrequests', {
+		   method: 'get',
+		   onSuccess: function(transport) {
+		      var json = transport.responseText.evalJSON();
+			  var table = new Element('table').insert( 
+			     new Element('thead')
+				    .insert(new Element('th').update("#"))
+				    .insert(new Element('th').update("Vote Up"))
+				    .insert(new Element('th').update("Artist"))
+				    .insert(new Element('th').update("Album"))
+				    .insert(new Element('th').update("Song"))
+				    .insert(new Element('th').update("Voters"))
+			  );
+			  var tbody = new Element('tbody');
+			  table.insert(tbody);
+			  for (i = 0; i < json.length; i++) {
+			     var voters = json[i].voters.length+' ' + (json[i].voters.length > 1?'votes':'request') + ' from: ';
+				 for (j = 0; j < json[i].voters.length; j++) {
+				    if (j > 0) {
+					   voters += ", ";
+					}
+					voters += json[i].voters[j]
+				 }
+			     tbody.insert(new Element('tr')
+				    .insert(new Element('td').update(i + 1))
+				    .insert(new Element('td').update( new Element('input', {'type':'button','onclick': 'javascript: doRequest(\''+ json[i].fileName.gsub('\\', '\\\\') +'\')', 'class': 'requestButton', 'value':'Vote Up' } ) ))
+				    .insert(new Element('td').update(json[i].metadata.artist))
+				    .insert(new Element('td').update(json[i].metadata.album))
+				    .insert(new Element('td').update(json[i].metadata.title))
+				    .insert(new Element('td').update(voters))
+				 );
+			  }
+		      $('requestQueue').update(table);
+			  ieSucks();
+		   }
+	    });
+		updateRequests.delay(5);
+	  }
+	  function ieSucks() {
+		if (Prototype.Browser.IE){
+		   var ieRowNum = 0;
+		   $$('table tbody > tr:nth-child(even)').each(
+			  function(row){
+				 Element.addClassName(row, 'evenRow');
+			  }
+		   );
+		   $$('table tbody > tr:nth-child(odd)').each(
+			  function(row){
+				 Element.addClassName(row, "oddRow");
+			  }
+		   );
+		}
 	  }
    </script>
 </head>
@@ -66,6 +140,7 @@
 	<ul id="tabMenu">
       <li class="tab"><a href="#nowPlaying">Now Playing</a></li>
       <li class="tab"><a href="#search">Search</a></li>
+      <li class="tab"><a href="#requests">Requests</a></li>
 	</ul>
   </div>
   
@@ -75,10 +150,17 @@
   </div>
   <div id="search" class="tabContent">
     <h3>Search</h3>
+	<div id="querySection"><input type="text" id="query" name="query" /> <input type="button" value="search" class="selected" onclick="javascript: doQuery();"/></div>
+	<div id="searchResults"></div>
+  </div>
+  <div id="requests" class="tabContent">
+    <h3>Requests:</h3>
+	<div id="requestQueue"></div>
   </div>
    <script language="javascript">
       tabControl = new Control.Tabs("tabMenu");
 	  updateNowPlaying();
+	  updateRequests();
    </script>
 </body>
 </html>

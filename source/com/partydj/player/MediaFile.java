@@ -63,8 +63,30 @@ public class MediaFile implements JSONSerializable {
             MusicMetadataSet metadataSet = new MyID3().read(source);
             metadata = metadataSet.getSimplified();
          } catch (Exception e) {
-            //no metadata - default to file name
             metadata = new MusicMetadata(source.getName());
+            try {
+               File file = source;
+               String fileName = file.getName();
+               fileName = file.getName().substring(0, fileName.lastIndexOf("."));
+               String[] parts = fileName.split("\\s*[-]\\s*");
+               metadata.setSongTitle(parts[parts.length - 1]);
+               int index = 0;
+               if (parts.length > index + 1) {
+                  if (parts[index].matches("\\d+")) {
+                     String num = parts[index];
+                     if (num.charAt(0) == '0') {
+                        num = num.substring(1);
+                     }
+                     metadata.setTrackNumber(Integer.valueOf(num), "");
+                  }
+                  if (parts.length > index + 1) {
+                     metadata.setArtist(parts[index++]);
+                  }
+               }
+               if (parts.length > index + 1) {
+                  metadata.setArtist(parts[index++]);
+               }
+            } catch (Exception ignore) {}
          }
          return metadata;
       }
@@ -111,19 +133,31 @@ public class MediaFile implements JSONSerializable {
          } catch (Exception e) {
             metadata = new MusicMetadata(getFile().getName());
          }
+         ensureMetadata();
       }
       return metadata;
    }
    
+   private void ensureMetadata() {
+      try {
+         File file = getFile();
+         String fileName = file.getName();
+         fileName = file.getName().substring(0, fileName.lastIndexOf("."));
+         String[] parts = fileName.split("\\s*[-]\\s*");
+         metadata.setSongTitle(parts[parts.length - 1]);
+         if (parts.length > 1) {
+            metadata.setArtist(parts[0]);
+         }
+         if (parts.length > 2) {
+            metadata.setArtist(parts[1]);
+         }
+      } catch (Exception ignore) {}
+      
+   }
    public String getLengthDisplay() {
       Number seconds = getMetadata().getDurationSeconds();
       if (seconds != null) {
-         int len = seconds.intValue();
-         StringBuilder length = new StringBuilder();
-         length.append(len/60);
-         length.append(':');
-         length.append(len % 60);
-         return length.toString();
+         return Etc.getTimeDurationDisplay(seconds.intValue());
       }
       return null;
    }
@@ -152,10 +186,6 @@ public class MediaFile implements JSONSerializable {
    
    public String getSimpleName() {
       return getMetadata() != null ? getMetadata().getArtist() + " - " + getMetadata().getAlbum() + " - " + getMetadata().getSongTitle() : "".intern();
-   }
-   
-   public String getSearchableString() {
-      return getMetadata() != null ? getMetadata().getArtist() + " - " + getMetadata().getSongTitle() : "".intern();
    }
    
    public JSONObject toJSON() {

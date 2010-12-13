@@ -9,5 +9,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/javax.servlet/servlet.jar" sourcepath="lib/javax.servlet/servlet-src.jar"/>
 	<classpathentry kind="lib" path="lib/com.google.guava_r07/guava-r07.jar" sourcepath="lib/com.google.guava_r07/guava-src-r07.zip"/>
+	<classpathentry kind="lib" path="lib/org.apache.lucene/lucene-core-3.0.3.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

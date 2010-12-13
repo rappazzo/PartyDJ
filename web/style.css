@@ -28,5 +28,5 @@ td {font-size: .8em; line-height: 1em; color: #000000; font-family: Verdana, Ari
 #nav li a:hover { color: #E6E6E6; background-color: #1D56A1; }
 #nav li a.active { color: #FFFFFF; background-color: #003366; padding: 6px 8px; }
 
-.selected { color: #000000; background-color: #85BA48; }
+.selected { color: #FFFFFF; background-color: #003366; }
 .centered { margin: 0 auto; text-align:center; }

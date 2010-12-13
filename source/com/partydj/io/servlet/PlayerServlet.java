@@ -39,17 +39,18 @@ public class PlayerServlet extends BaseServlet {
    
    enum PlayerAction {
       NOWPLAYING() {
-         @Override public Object invoke(String... args) {
+         @Override public Object invoke(HttpServletRequest servletRequest) {
             return PartyDJ.getInstance().getPlayer().getCurrentlyPlaying();
          }
       },
       QUEUE() {
-         @Override public Object invoke(String... args) {
+         @Override public Object invoke(HttpServletRequest servletRequest) {
             List<MediaFile> queue = PartyDJ.getInstance().getPlayer().getPlayQueue();
-            if (args.length > 0) {
+            String sizeString = servletRequest.getParameter("size");
+            if (sizeString != null) {
                //accept an "only show the next 'n' songs"
                try {
-                  int size = Integer.valueOf(args[0]).intValue();
+                  int size = Integer.valueOf(sizeString).intValue();
                   if (size < queue.size()) {
                      return queue.subList(0, size);
                   }
@@ -59,10 +60,38 @@ public class PlayerServlet extends BaseServlet {
             }
             return queue;
          }
+      },
+      SEARCH() {
+         @Override public Object invoke(HttpServletRequest servletRequest) {
+            return PartyDJ.getInstance().getSearchProvider().find(servletRequest.getParameterMap());
+         }
+      },
+      REQUEST() {
+         @Override public Object invoke(HttpServletRequest servletRequest) {
+            final JSONObject actualResult = new JSONObject();
+            String fileName = servletRequest.getParameter(MediaFile.FILENAME);
+            if (fileName != null) {
+               MediaFile file = MediaFile.create(fileName);
+               if (file.getFile().exists()) {
+                  int estimatedWaitTime = PlaylistManager.INSTANCE.request(file, servletRequest.getRemoteAddr());
+                  actualResult.put("wait", Etc.getTimeDurationDisplay(estimatedWaitTime));
+               }
+            }
+            return new JSONSerializable() {
+               @Override public JSONObject toJSON() {
+                  return actualResult;
+               }
+            };
+         }
+      },
+      LISTREQUESTS() {
+         @Override public Object invoke(HttpServletRequest servletRequest) {
+            return PlaylistManager.INSTANCE.getRequests();
+         }
       }
       ;
       
-      abstract Object invoke(String... args);
+      abstract Object invoke(HttpServletRequest servletRequest);
       
       static PlayerAction get(String actionName) {
          try {
@@ -109,7 +138,7 @@ public class PlayerServlet extends BaseServlet {
                return buf.toString();
             }
          }
-         return "";
+         return new JSONArray().toString();
       } else {
          return String.valueOf(operationResult);
       }
@@ -121,12 +150,8 @@ public class PlayerServlet extends BaseServlet {
       String[] uriParts = uri.substring(1).split("[/\\ ]+");
       PlayerAction operation = PlayerAction.get(uriParts[1]);
       if (operation != null) {
-         String[] args = new String[uriParts.length - 2];
-         for (int i = 0; i < args.length; i++) {
-            args[i] = uriParts[i+2];
-         }
          try {
-            result.append(format(operation.invoke(args)).getBytes(CharsetConstants.UTF8.name()));
+            result.append(format(operation.invoke(servletRequest)).getBytes(CharsetConstants.UTF8.name()));
          } catch (Exception e) {
             e.printStackTrace();
          }

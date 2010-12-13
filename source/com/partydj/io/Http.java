@@ -100,7 +100,7 @@ public class Http {
             PrintStream outStream = new PrintStream(listener.getOutputStream());
             listener.setSoTimeout(0);
             listener.setTcpNoDelay(true);
-            DefaultHttpServletRequest servletRequest = DefaultHttpServletRequest.create(inStream);
+            DefaultHttpServletRequest servletRequest = DefaultHttpServletRequest.create(inStream, listener.getInetAddress());
             try {
                if (servletRequest != null) {
                   for (SimpleServlet servlet : servlets) {

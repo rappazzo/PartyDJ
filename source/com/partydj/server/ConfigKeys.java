@@ -32,5 +32,6 @@ public interface ConfigKeys {
    public static final String MAX_ALLOWED_PLAY_COUNT = "max.allowed.play.count";
    public static final String REPLAY_TIME_THRESHHOLD = "replay.time.threshhold";
    public static final String PLAYER_CLASS = "player.class";
+   public static final String SEARCH_PROVIDER = "search.provider.class";
 
 }
