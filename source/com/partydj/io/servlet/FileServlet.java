@@ -67,6 +67,10 @@ public class FileServlet extends BaseServlet {
          return "text/css";
       } else if (request.endsWith("js")) {
          return "text/javascript";
+      } else if (request.endsWith("jpg")) {
+         return "image/jpeg";
+      } else if (request.endsWith("png")) {
+         return "image/png";
       }
       return servletRequest.getContentType();
    }
