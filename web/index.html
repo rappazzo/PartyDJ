@@ -2,6 +2,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+
+<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;"/>
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Party DJ</title>
    <link rel="stylesheet" type="text/css" href="style.css" />
    
@@ -60,7 +63,7 @@
 			  table.insert(tbody);
 			  for (i = 0; i < json.length; i++) {
 			     tbody.insert(new Element('tr')
-				    .insert(new Element('td').update( new Element('input', {'type':'button','onclick': 'javascript: doRequest(\''+ json[i].fileName.gsub('\\', '\\\\') +'\')', 'class': 'requestButton', 'value':'request' } ) ))
+				    .insert(new Element('td').update( new Element('input', {'type':'button','onclick': 'javascript: doRequest(\''+ json[i].fileName.gsub('\\', '\\\\') +'\')', 'class': 'requestButton', 'value':'Request' } ) ))
 				    .insert(new Element('td').update(json[i].metadata.artist))
 				    .insert(new Element('td').update(json[i].metadata.album))
 				    .insert(new Element('td').update(json[i].metadata.title))
@@ -150,7 +153,7 @@
   </div>
   <div id="search" class="tabContent">
     <h3>Search</h3>
-	<div id="querySection"><input type="text" id="query" name="query" /> <input type="button" value="search" class="selected" onclick="javascript: doQuery();"/></div>
+	<div id="querySection"><input type="text" id="query" name="query" onKeyPress="if (event.keyCode==13) { doQuery();};" /> <input type="button" value="Search" class="requestButton" onclick="javascript: doQuery();"/></div>
 	<div id="searchResults"></div>
   </div>
   <div id="requests" class="tabContent">

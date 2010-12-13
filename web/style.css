@@ -29,4 +29,22 @@ td {font-size: .8em; line-height: 1em; color: #000000; font-family: Verdana, Ari
 #nav li a.active { color: #FFFFFF; background-color: #003366; padding: 6px 8px; }
 
 .selected { color: #FFFFFF; background-color: #003366; }
+
+.requestButton {
+   width: 60px;
+   height: 18px;
+   border:2px solid; 
+   padding-bottom: 2px;
+   border-color: #CC9933; 
+   background-color: #FFCC33; 
+   font-weight: bold; 
+   font-size: .7em; 
+   color: #00305F; 
+   font-family: Verdana, Arial, Helvetica, sans-serif; 
+   cursor: pointer; cursor: hand; 
+   padding: 0 0 2px;
+   line-height: 8pt;
+   -moz-border-radius: 2px;
+   -webkit-border-radius: 2px;
+}
 .centered { margin: 0 auto; text-align:center; }
