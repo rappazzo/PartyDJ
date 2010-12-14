@@ -33,7 +33,6 @@ import com.partydj.util.*;
  **/
 public class RegexSearchProvider implements SearchProvider {
    
-   public static final String QUERY_PARAM = "any";
    
    List<MediaFile> indexed = new ArrayList();
    
@@ -41,13 +40,13 @@ public class RegexSearchProvider implements SearchProvider {
       indexed.add(file);
    }
 
-   @Override public List<MediaFile> find(Map<String, Collection<String>> queryParameters) {
-      String query = "("+Etc.join(queryParameters.get(QUERY_PARAM), "|") +")";
+   @Override public Collection<MediaFile> find(Map<String, Collection<String>> queryParameters) {
+      String query = "("+Etc.join(queryParameters.get(ANY), "|") +")";
       if (query == null || query.length() == 0) {
          return Collections.unmodifiableList(indexed);
       } else {
          Pattern pattern = Pattern.compile(query, Pattern.CASE_INSENSITIVE);
-         List<MediaFile> found = new ArrayList();
+         Set<MediaFile> found = new TreeSet(MediaFile.COMPARE_BY_TITLE);
          for (MediaFile file : indexed) {
             if (pattern.matcher(file.getSimpleName()).find()) {
                found.add(file);

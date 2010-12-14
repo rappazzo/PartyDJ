@@ -53,8 +53,9 @@ public enum PlaylistManager {
       Player player = PartyDJ.getInstance().getPlayer();
       player.ensureAvailable();
       if (songPoolSource != null && songPoolSource.exists()) {
+         ExecutorService songPoolBuilderPool = Executors.newFixedThreadPool(5, NamedThreadFactory.createDaemonFactory("Playlist Song Pool Builder"));
          if (songPoolSource.isDirectory()) {
-            createPoolFromDirectory(songPoolSource);
+            createPoolFromDirectory(songPoolSource, songPoolBuilderPool);
          } else {
             createPoolFromPlaylist(songPoolSource);
          }
@@ -87,16 +88,20 @@ public enum PlaylistManager {
       }
    };
    
-   private List<MediaFile> createPoolFromDirectory(File songPoolSource) {
-      File[] files = songPoolSource.listFiles(POOL_FILE_FILTER);
-      for (File file : files) {
-         if (file.isDirectory()) {
-            createPoolFromDirectory(file);
-         } else {
-            addToPool(MediaFile.create(file));
+   private void createPoolFromDirectory(final File songPoolSource, final ExecutorService songPoolBuilderPool) {
+      songPoolBuilderPool.execute(new Runnable() {
+         @Override public void run() {
+            System.out.println("Adding From: " + songPoolSource.getAbsolutePath());
+            File[] files = songPoolSource.listFiles(POOL_FILE_FILTER);
+            for (File file : files) {
+               if (file.isDirectory()) {
+                  createPoolFromDirectory(file, songPoolBuilderPool);
+               } else {
+                  addToPool(MediaFile.create(file));
+               }
+            }
          }
-      }
-      return null;
+      });
    }
    
    private void createPoolFromPlaylist(File songPoolSource) {

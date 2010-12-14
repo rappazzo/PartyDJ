@@ -27,6 +27,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import org.cmc.music.metadata.*;
 import org.cmc.music.myid3.*;
+import com.partydj.search.*;
 import com.partydj.util.*;
 import com.partydj.util.json.*;
 
@@ -51,6 +52,21 @@ public class MediaFile implements JSONSerializable {
    
    private static final ExecutorService METADATA_PARSER_POOL = Executors.newFixedThreadPool(5, NamedThreadFactory.createDaemonFactory("Metadata Parser"));
    private static Map<String, MediaFile> CACHE = new HashMap();
+   
+   public static final Comparator<MediaFile> COMPARE_BY_TITLE = new Comparator<MediaFile>() {
+      @Override public int compare(MediaFile o1, MediaFile o2) {
+         String o1Title = o1.getMetadata() != null ? o1.getMetadata().getSongTitle() : null;
+         String o2Title = o2.getMetadata() != null ? o2.getMetadata().getSongTitle() : null;
+         if (o1Title != null && o2Title != null) {
+            return o1Title.compareTo(o2Title);
+         } else if (o1Title == null && o2Title != null) {
+            return 1;
+         } else if (o1Title != null && o2Title == null) {
+            return -1;
+         }
+         return 0;
+      }
+   };
    
    static class MetadataParser implements Callable<IMusicMetadata> {
       File source;

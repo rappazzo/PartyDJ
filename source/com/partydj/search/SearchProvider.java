@@ -30,6 +30,10 @@ import com.partydj.player.*;
  **/
 public interface SearchProvider {
 
+   public static final String ANY = "any";
+   public static final String MAX_RESULTS = "maxResults";
+   public static final Integer DEFAULT_MAX_RESULTS = Integer.valueOf(50);
+   
    /**
     * Add the given media file to the search index
     */
@@ -38,6 +42,6 @@ public interface SearchProvider {
    /**
     * search the index for using the given query
     */
-   public List<MediaFile> find(Map<String, Collection<String>> queryParameters);
+   public Collection<MediaFile> find(Map<String, Collection<String>> queryParameters);
    
 }

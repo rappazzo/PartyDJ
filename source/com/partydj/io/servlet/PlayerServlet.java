@@ -72,9 +72,11 @@ public class PlayerServlet extends BaseServlet {
             String fileName = servletRequest.getParameter(MediaFile.FILENAME);
             if (fileName != null) {
                MediaFile file = MediaFile.create(fileName);
-               if (file.getFile().exists()) {
+               if (file != null && file.getFile() != null && file.getFile().exists()) {
                   int estimatedWaitTime = PlaylistManager.INSTANCE.request(file, servletRequest.getRemoteAddr());
                   actualResult.put("wait", Etc.getTimeDurationDisplay(estimatedWaitTime));
+               } else {
+                  System.out.println(fileName + " does not exist.");
                }
             }
             return new JSONSerializable() {

@@ -105,18 +105,9 @@ public class FileServlet extends BaseServlet {
             }
          }
          if (fileToServe.exists() && fileToServe.isFile()) {
-            long fileLen = fileToServe.length();
-            //use the file length to set the buffer size
-            int chunkSize = ChunkedCharBuffer.DEFAULT_CHUNK_SIZE;
-            int numChunks = ChunkedCharBuffer.DEFAULT_NUMBER_OF_CHUNKS;
-            if (fileLen > chunkSize * numChunks) {
-               numChunks = new Long((fileLen / chunkSize) + 1).intValue();
-            }
-            ChunkedCharBuffer fileToServeContents = new ChunkedCharBuffer(chunkSize, numChunks);
-            FileReader fr = new FileReader(fileToServe);
-            fileToServeContents.append(fr);
+            FileInputStream fr = new FileInputStream(fileToServe);
+            response.append(fr);
             fr.close(); // Release the file lock
-            response = fileToServeContents.toChunkedByteBuffer(CharsetConstants.UTF8);
          } else {
             throw new UnservableException(HttpConstants.HTTP_NOT_FOUND);
          }

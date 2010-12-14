@@ -6,12 +6,13 @@
 <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;"/>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Party DJ</title>
-   <link rel="stylesheet" type="text/css" href="style.css" />
+   <link rel="stylesheet" type="text/css" href="style/iphone.css" />
    
    <!-- js -->
    <script src="js/prototype.js" type="text/javascript"></script>
    <script src="js/livepipe.js" type="text/javascript"></script>
    <script src="js/tabs.js" type="text/javascript"></script>
+   <script src="js/scriptaculous.js" type="text/javascript"></script>
    <script language="javascript">
      var tabControl;
    </script>
@@ -29,7 +30,7 @@
 				 }
 			     $('playQueue').insert(
 				    new Element('div', {'class':'songinfo'+(i==0?' selected':'')})
-					  .insert(new Element('div', {'class':'songtitle'}).update(''+(i + 1)+': '+json[i].metadata.title))
+					  .insert(new Element('div', {'class':'songtitle'}).update(json[i].metadata.title))
 					  .insert(new Element('div', {'class':'songdetails'}).update(details))
 				 );
 			  }
@@ -38,22 +39,26 @@
 		updateNowPlaying.delay(5);
 	  }
       function doQuery() {
+		$('searchResults').update('Searching...');
 	    new Ajax.Request('/player/search', {
 		   parameters: {any: $('query').getValue()},
 		   onSuccess: function(transport) {
 		      var json = transport.responseText.evalJSON();
-			  
-			  $('searchResults').update(new Element('div', {'class':'subtext bottombordered'}).update('(click to request)'));
-			  for (i = 0; i < json.length; i++) {
-			     var details = json[i].metadata.artist+' - '+json[i].metadata.album+' - '+json[i].metadata.title;
-				 if (json[i].metadata.length != null) {
-				    details+=' ('+json[i].metadata.length+')';
-				 }
-			     $('searchResults').insert(
-				    new Element('div', {'class':'songinfo', 'onclick': 'javascript: doRequest(\''+ json[i].fileName.gsub('\\', '\\\\') +'\')'})
-					  .insert(new Element('div', {'class':'songtitle'}).update(json[i].metadata.title))
-					  .insert(new Element('div', {'class':'songdetails'}).update(details))
-				 );
+			  if (json.length > 0) {
+			     $('searchResults').update(new Element('div', {'class':'subtext bottombordered'}).update('(click to request)'));
+			     for (i = 0; i < json.length; i++) {
+			        var details = json[i].metadata.artist+' - '+json[i].metadata.album+' - '+json[i].metadata.title;
+				    if (json[i].metadata.length != null) {
+				       details+=' ('+json[i].metadata.length+')';
+				    }
+			        $('searchResults').insert(
+				       new Element('div', {'class':'songinfo', 'onclick': 'javascript: doRequest("'+ json[i].fileName.gsub('\\', '\\\\') +'")'})
+					     .insert(new Element('div', {'class':'songtitle'}).update(json[i].metadata.title))
+					     .insert(new Element('div', {'class':'songdetails'}).update(details))
+				    );
+			     }
+			  } else {
+			     $('searchResults').update('No results');
 			  }
 		   }
 		});
@@ -94,11 +99,24 @@
 	    });
 		updateRequests.delay(5);
 	  }
+	  //swipe detection
+	  var xPos;
+	  var yPos;
+	  function getXY(event) {
+         xPos = event.screenX;
+         yPos = event.screenY;
+	  }
+	  function detectSwipe(event) {
+	     deltaX = xPos - event.screenX;
+	     deltaY = yPos - event.screenY;
+	     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 200) {
+		    //deltaX > 0 ? tabControl.next() : tabControl.previous();
+		 }
+	  }
    </script>
 </head>
 
-<body>
-  <h3>Party DJ!</h3>
+<body onmousedown="getXY(event);" onmouseup="detectSwipe(event);">
   <div id="nav">
 	<ul id="tabMenu">
       <li class="tab"><a href="#nowPlaying">Now Playing</a></li>
@@ -111,7 +129,7 @@
 	<div id="playQueue"></div>
   </div>
   <div id="search" class="tabContent">
-	<div id="querySection"><input type="text" id="query" name="query" onKeyPress="if (event.keyCode==13) { doQuery();};" /> <input type="button" value="Search" class="requestButton" onclick="javascript: doQuery();"/></div>
+	<div id="querySection"><input type="text" id="query" name="query" onKeyPress="if (event.which == 13 || event.keyCode==13) { doQuery();};" /> <input type="button" value="Search" class="requestButton" onclick="javascript: doQuery();"/></div>
 	<div id="searchResults"></div>
   </div>
   <div id="requests" class="tabContent">
@@ -119,6 +137,12 @@
   </div>
    <script language="javascript">
       tabControl = new Control.Tabs("tabMenu");
+	  tabControl.observe('beforeChange',function(oldContainer,newContainer){  
+         Effect.BlindUp(oldContainer, { duration: 0.25 });
+      });
+	  tabControl.observe('afterChange',function(newContainer){  
+         Effect.BlindDown(newContainer, { duration: 0.25 });
+      });
 	  updateNowPlaying();
 	  updateRequests();
    </script>

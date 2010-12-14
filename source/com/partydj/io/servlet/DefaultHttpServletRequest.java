@@ -456,7 +456,7 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
    public String getParameter(String key) {
       String value = null;
       Collection<String> valueSet = parameterMap.get(key);
-      if (valueSet != null) {
+      if (valueSet != null && valueSet.size() > 0) {
          value = valueSet.iterator().next();
       }
       return value;
