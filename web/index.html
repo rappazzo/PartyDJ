@@ -137,12 +137,14 @@
   </div>
    <script language="javascript">
       tabControl = new Control.Tabs("tabMenu");
+	  /*
 	  tabControl.observe('beforeChange',function(oldContainer,newContainer){  
          Effect.BlindUp(oldContainer, { duration: 0.25 });
       });
 	  tabControl.observe('afterChange',function(newContainer){  
          Effect.BlindDown(newContainer, { duration: 0.25 });
       });
+	  */
 	  updateNowPlaying();
 	  updateRequests();
    </script>

@@ -39,7 +39,6 @@ public class Winamp implements Player {
          try {
             totalSeconds += track.getMetadata().getDurationSeconds().intValue();
          } catch (Exception e) {
-            System.out.println("Error determining track time for " + track);
             AudioFileFormat baseFileFormat;
             try {
                baseFileFormat = AudioSystem.getAudioFileFormat(track.getFile());
