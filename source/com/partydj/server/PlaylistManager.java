@@ -64,6 +64,8 @@ public enum PlaylistManager {
          }
          if (Config.config().getBooleanProperty(ConfigKeys.RANDOMIZE_POOL)) {
             Collections.shuffle(songPool);
+            Collections.shuffle(songPool);
+            Collections.shuffle(songPool);
          }
          songPool = new CopyOnWriteArrayList(songPool);
       }
