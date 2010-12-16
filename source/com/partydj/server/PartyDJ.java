@@ -36,6 +36,7 @@ public class PartyDJ {
    private Player player = null;
    private Object monitor = new Object();
    private SearchProvider searchProvider = null;
+   private Object searchProviderLock = new Object();
    
    private PartyDJ() {
       PartyDJ.INSTANCE = this;
@@ -59,18 +60,21 @@ public class PartyDJ {
     */
    public SearchProvider getSearchProvider() {
       if (this.searchProvider == null) {
-         if (Config.config().getProperty(ConfigKeys.SEARCH_PROVIDER) != null) {
-            this.searchProvider = (SearchProvider)Config.config().getClassProperty(ConfigKeys.SEARCH_PROVIDER);
-         } else {
-            this.searchProvider = new RegexSearchProvider();
+         synchronized (searchProviderLock) {
+            if (this.searchProvider == null) {
+               if (Config.config().getProperty(ConfigKeys.SEARCH_PROVIDER) != null) {
+                  this.searchProvider = (SearchProvider)Config.config().getClassProperty(ConfigKeys.SEARCH_PROVIDER);
+               } else {
+                  this.searchProvider = new RegexSearchProvider();
+               }
+            }
          }
       }
       return this.searchProvider;
    }
    
    public void run() {
-      String poolFile = Config.config().getProperty(ConfigKeys.MUSIC_POOL);
-      PlaylistManager.INSTANCE.start(new File(poolFile));
+      PlaylistManager.INSTANCE.start();
       Http.create().start();
 
       try {

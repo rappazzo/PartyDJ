@@ -128,7 +128,9 @@ public class PlayerServlet extends BaseServlet {
             if (collection.iterator().next() instanceof JSONSerializable) {
                JSONArray json = new JSONArray();
                for (Object item : collection) {
-                  json.add(((JSONSerializable)item).toJSON());
+                  if (item != null) {
+                     json.add(((JSONSerializable)item).toJSON());
+                  }
                }
                return json.toString();
             } else {

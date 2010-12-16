@@ -23,6 +23,7 @@
 package com.partydj.search;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.regex.*;
 import com.partydj.player.*;
 import com.partydj.server.*;
@@ -33,8 +34,7 @@ import com.partydj.util.*;
  **/
 public class RegexSearchProvider implements SearchProvider {
    
-   
-   List<MediaFile> indexed = new ArrayList();
+   private final List<MediaFile> indexed = new ArrayList();
    
    @Override public void addToSearchIndex(MediaFile file) {
       indexed.add(file);

@@ -55,7 +55,7 @@ public class LuceneSearchProvider implements SearchProvider {
          return null;
       }
    }
-   
+
    @Override public void addToSearchIndex(MediaFile file) {
       IMusicMetadata metadata = file.getMetadata();
       try {

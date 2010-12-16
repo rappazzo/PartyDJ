@@ -25,9 +25,10 @@ package com.partydj.player;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.regex.*;
 import org.cmc.music.metadata.*;
 import org.cmc.music.myid3.*;
-import com.partydj.search.*;
+import com.partydj.server.*;
 import com.partydj.util.*;
 import com.partydj.util.json.*;
 
@@ -154,18 +155,47 @@ public class MediaFile implements JSONSerializable {
       return metadata;
    }
    
+   public static final Pattern TITLE_AND_TRACK = Pattern.compile("^0*(\\d+)\\s(\\s*-\\s*)?(.*)$");
+   public static final Pattern TRACK_NUM = Pattern.compile("^0*(\\d\\d+)");
    private void ensureMetadata() {
       try {
          File file = getFile();
          String fileName = file.getName();
          fileName = file.getName().substring(0, fileName.lastIndexOf("."));
          String[] parts = fileName.split("\\s*[-]\\s*");
-         metadata.setSongTitle(parts[parts.length - 1]);
-         if (parts.length > 1) {
-            metadata.setArtist(parts[0]);
+         
+         if (metadata.getSongTitle() == null) {
+            String title = parts[parts.length - 1];
+            Matcher m = TITLE_AND_TRACK.matcher(title);
+            if (m.find()) {
+               try {
+                  title = m.group(3);
+               } catch (Exception ignore) {}
+               //ignore the track
+            }
+            metadata.setSongTitle(title);
          }
-         if (parts.length > 2) {
-            metadata.setArtist(parts[1]);
+         if (metadata.getArtist() == null) {
+            String poolFile = Config.config().getProperty(ConfigKeys.MUSIC_POOL);
+            String[] path = file.getAbsolutePath().substring(poolFile.length()).split("[\\\\/]");
+            if (path.length > 3) {
+               metadata.setArtist(path[path.length - 3]);
+               if (metadata.getAlbum() == null) {
+                  metadata.setAlbum(path[path.length - 2]);
+               }
+            } else if (path.length > 2) {
+               metadata.setArtist(path[path.length - 2]);
+            }
+         }
+         int offset = 0;
+         if (parts.length > 1 && TRACK_NUM.matcher(parts[0]).find()) {
+            offset++;
+         }
+         if (metadata.getArtist() == null && parts.length > offset+1) {
+            metadata.setArtist(parts[offset]);
+         }
+         if (metadata.getAlbum() == null && parts.length > offset+2) {
+            metadata.setAlbum(parts[offset+1]);
          }
       } catch (Exception ignore) {}
       

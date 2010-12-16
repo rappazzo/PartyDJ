@@ -40,22 +40,25 @@ public enum PlaylistManager {
    public static final int MIN_QUEUE_SIZE = 3;
    
    private static final ScheduledExecutorService CHECKER_POOL = Executors.newScheduledThreadPool(1, NamedThreadFactory.createDaemonFactory("Playlist Manager"));
+   private static ExecutorService SONG_POOL_BUILDER_POOL = Executors.newFixedThreadPool(5, NamedThreadFactory.createDaemonFactory("Playlist Song Pool Builder"));
+
    private QueueChecker CHECKER = new QueueChecker();
    
    private List<MediaRequest> requestQueue = Collections.synchronizedList(new LinkedList());
    private List<MediaFile> songPool = new ArrayList(); //this is made concurrent after initialization
    private int poolPointer = 0;
-   private Map<MediaFile, Integer> playCount = new ConcurrentHashMap<MediaFile, Integer>();
+   private Map<MediaFile, Integer> requestCount = new ConcurrentHashMap<MediaFile, Integer>();
    private Map<MediaFile, Long> lastPlayed = new ConcurrentHashMap<MediaFile, Long>();
    private Collection<MediaFile> history = new ConcurrentLinkedQueue();
 
-   void start(File songPoolSource) {
+   void start() {
+      String poolFile = Config.config().getProperty(ConfigKeys.MUSIC_POOL);
+      File songPoolSource = new File(poolFile);
       Player player = PartyDJ.getInstance().getPlayer();
       player.ensureAvailable();
       if (songPoolSource != null && songPoolSource.exists()) {
-         ExecutorService songPoolBuilderPool = Executors.newFixedThreadPool(5, NamedThreadFactory.createDaemonFactory("Playlist Song Pool Builder"));
          if (songPoolSource.isDirectory()) {
-            createPoolFromDirectory(songPoolSource, songPoolBuilderPool);
+            createPoolFromDirectory(songPoolSource);
          } else {
             createPoolFromPlaylist(songPoolSource);
          }
@@ -68,9 +71,10 @@ public enum PlaylistManager {
    }
    
    static final FileFilter POOL_FILE_FILTER = new FileFilter() {
-      Pattern songFilePattern = Pattern.compile("\\.mp3$|\\.m4a$", Pattern.CASE_INSENSITIVE);
+      private final Pattern songFilePattern = Pattern.compile("\\.mp3$|\\.m4a$", Pattern.CASE_INSENSITIVE);
+      private static final long MIN_SIZE = 349525; //third of a meg
       @Override public boolean accept(File pathname) {
-         return (!isSymlink(pathname) && pathname.isDirectory()) || songFilePattern.matcher(pathname.getName()).find();
+         return (!isSymlink(pathname) && pathname.isDirectory()) || (pathname.length() >= MIN_SIZE && songFilePattern.matcher(pathname.getName()).find());
       }
       boolean isSymlink(File file) {
          try {
@@ -88,14 +92,14 @@ public enum PlaylistManager {
       }
    };
    
-   private void createPoolFromDirectory(final File songPoolSource, final ExecutorService songPoolBuilderPool) {
-      songPoolBuilderPool.execute(new Runnable() {
+   private void createPoolFromDirectory(final File songPoolSource) {
+      SONG_POOL_BUILDER_POOL.execute(new Runnable() {
          @Override public void run() {
             System.out.println("Adding From: " + songPoolSource.getAbsolutePath());
             File[] files = songPoolSource.listFiles(POOL_FILE_FILTER);
             for (File file : files) {
                if (file.isDirectory()) {
-                  createPoolFromDirectory(file, songPoolBuilderPool);
+                  createPoolFromDirectory(file);
                } else {
                   addToPool(MediaFile.create(file));
                }
@@ -159,6 +163,7 @@ public enum PlaylistManager {
          if (existingRequest != null) {
             existingRequest.vote(from);
          } else {
+            increaseRequestCount(mediaFile);
             requestQueue.add(MediaRequest.create(mediaFile, from));
          }
          Collections.sort(requestQueue);
@@ -195,21 +200,21 @@ public enum PlaylistManager {
       return null;
    }
    
-   private int increasePlayCount(MediaFile file) {
-      Integer currentPlayCount = playCount.get(file);
-      if (currentPlayCount == null) {
-         currentPlayCount = Integer.valueOf(0);
+   private int increaseRequestCount(MediaFile file) {
+      Integer currentRequestCount = requestCount.get(file);
+      if (currentRequestCount == null) {
+         currentRequestCount = Integer.valueOf(0);
       }
-      playCount.put(file, Integer.valueOf(currentPlayCount.intValue() + 1));
-      return currentPlayCount.intValue() + 1;
+      requestCount.put(file, Integer.valueOf(currentRequestCount.intValue() + 1));
+      return currentRequestCount.intValue() + 1;
    }
    
-   private int getPlayCount(MediaFile file) {
-      Integer currentPlayCount = playCount.get(file);
-      if (currentPlayCount == null) {
-         currentPlayCount = Integer.valueOf(0);
+   private int getRequestCount(MediaFile file) {
+      Integer currentRequestCount = requestCount.get(file);
+      if (currentRequestCount == null) {
+         currentRequestCount = Integer.valueOf(0);
       }
-      return currentPlayCount.intValue();
+      return currentRequestCount.intValue();
    }
    
    protected final void queueNext(int size) {
@@ -219,8 +224,7 @@ public enum PlaylistManager {
       if (size > 0) {
          for (int i = 0; i < size; i++) {
             MediaFile file = getNextMediaFile();
-            if (file != null && allowQueue(file)) {
-               increasePlayCount(file);
+            if (file != null) {
                history.add(file);
                next = player.addToQueue(file);
                added = true;
@@ -235,7 +239,7 @@ public enum PlaylistManager {
    }
    
    private boolean allowQueue(MediaFile file) {
-      int playCount = getPlayCount(file);
+      int playCount = getRequestCount(file);
       long lastPlayed = getLastPlayed(file);
       return file != null &&
          (getMaxAllowedPlayCount() == null || playCount < getMaxAllowedPlayCount().intValue()) &&
@@ -243,9 +247,12 @@ public enum PlaylistManager {
       ;
    }
 
+   /**
+    * @return the last time (in minutes) that the given song was played OR -1 if it has not yet been played
+    */
    public long getLastPlayed(MediaFile file) {
       Long lastTS = lastPlayed.get(file);
-      return lastTS != null ? System.currentTimeMillis() - lastTS.intValue() : -1;
+      return lastTS != null ? ((System.currentTimeMillis() - lastTS.intValue()) / 60000) : -1;
    }
 
    private Integer getMaxAllowedPlayCount() {

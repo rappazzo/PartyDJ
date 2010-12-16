@@ -11,5 +11,6 @@
 	<classpathentry kind="lib" path="lib/com.google.guava_r07/guava-r07.jar" sourcepath="lib/com.google.guava_r07/guava-src-r07.zip"/>
 	<classpathentry kind="lib" path="lib/org.apache.lucene/lucene-core-3.0.3.jar" sourcepath="lib/org.apache.lucene/lucene-3.0.3/src"/>
 	<classpathentry kind="lib" path="lib/org.apache.commons/commons-codec-1.4.jar" sourcepath="lib/org.apache.commons/commons-codec-1.4-sources.jar"/>
+	<classpathentry kind="lib" path="lib/org.limewire.collection.trie/Trie.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
