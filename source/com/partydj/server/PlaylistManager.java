@@ -40,7 +40,7 @@ public enum PlaylistManager {
    public static final int MIN_QUEUE_SIZE = 3;
    
    private static final ScheduledExecutorService CHECKER_POOL = Executors.newScheduledThreadPool(1, NamedThreadFactory.createDaemonFactory("Playlist Manager"));
-   private static ExecutorService SONG_POOL_BUILDER_POOL = Executors.newFixedThreadPool(5, NamedThreadFactory.createDaemonFactory("Playlist Song Pool Builder"));
+//   private static ExecutorService SONG_POOL_BUILDER_POOL = Executors.newFixedThreadPool(5, NamedThreadFactory.createDaemonFactory("Playlist Song Pool Builder"));
 
    private QueueChecker CHECKER = new QueueChecker();
    
@@ -50,6 +50,7 @@ public enum PlaylistManager {
    private Map<MediaFile, Integer> requestCount = new ConcurrentHashMap<MediaFile, Integer>();
    private Map<MediaFile, Long> lastPlayed = new ConcurrentHashMap<MediaFile, Long>();
    private Collection<MediaFile> history = new ConcurrentLinkedQueue();
+   private SortedSetMultimap<String, Long> skips = TreeMultimap.create();
 
    void start() {
       String poolFile = Config.config().getProperty(ConfigKeys.MUSIC_POOL);
@@ -63,8 +64,6 @@ public enum PlaylistManager {
             createPoolFromPlaylist(songPoolSource);
          }
          if (Config.config().getBooleanProperty(ConfigKeys.RANDOMIZE_POOL)) {
-            Collections.shuffle(songPool);
-            Collections.shuffle(songPool);
             Collections.shuffle(songPool);
          }
          songPool = new CopyOnWriteArrayList(songPool);
@@ -95,8 +94,8 @@ public enum PlaylistManager {
    };
    
    private void createPoolFromDirectory(final File songPoolSource) {
-      SONG_POOL_BUILDER_POOL.execute(new Runnable() {
-         @Override public void run() {
+//      SONG_POOL_BUILDER_POOL.execute(new Runnable() {
+//         @Override public void run() {
             System.out.println("Adding From: " + songPoolSource.getAbsolutePath());
             File[] files = songPoolSource.listFiles(POOL_FILE_FILTER);
             for (File file : files) {
@@ -106,8 +105,8 @@ public enum PlaylistManager {
                   addToPool(MediaFile.create(file));
                }
             }
-         }
-      });
+//         }
+//      });
    }
    
    private void createPoolFromPlaylist(File songPoolSource) {
@@ -175,6 +174,36 @@ public enum PlaylistManager {
          return totalSeconds;
       }
       return 0;
+   }
+   
+   public boolean canSkip(String who) {
+      Integer maxSkipsPerHour = Config.config().getIntegerProperty(ConfigKeys.MAX_SKIPS_PER_HOUR);
+      if (maxSkipsPerHour != null) {
+         long now = System.currentTimeMillis();
+         long ago = now - 1000 * 60 * 60; //1 hour
+         SortedSet<Long> userSkips = skips.get(who);
+         if (userSkips.isEmpty()) {
+            return true;
+         } else {
+            //first remove/cleanup stale entries
+            Iterator<Long> it = userSkips.iterator();
+            while (it.hasNext() && it.next().longValue() < ago) {
+               it.remove();
+            }
+            if (userSkips.size() < maxSkipsPerHour) {
+               return true;
+            }
+         }
+      }
+      return false;
+   }
+   
+   public void skipToNext(String who) {
+      if (canSkip(who)) {
+         Player player = PartyDJ.getInstance().getPlayer();
+         player.skipToNextInQueue();
+         skips.put(who, Long.valueOf(System.currentTimeMillis()));
+      }
    }
    
    public void addToPool(MediaFile file) {

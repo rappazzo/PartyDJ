@@ -25,8 +25,6 @@ package com.partydj.util.json;
 /**
  * 
  **/
-public interface JSONSerializable {
+public interface JSONStream {
 
-   JSONStream toJSON();
-   
 }

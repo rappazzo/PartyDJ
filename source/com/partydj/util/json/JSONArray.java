@@ -79,7 +79,7 @@ import java.util.*;
  * @author JSON.org
  * @version 2
  */
-public class JSONArray<V> extends ArrayList<V> {
+public class JSONArray<V> extends ArrayList<V> implements JSONStream {
 
    /**
     * Construct an empty JSONArray.

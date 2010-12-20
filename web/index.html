@@ -17,6 +17,13 @@
      var tabControl;
    </script>
    <script language="javascript">
+     var tabUpdateFunction;
+     function manageUpdate() {
+	    if (tabUpdateFunction != null) {
+           tabUpdateFunction();
+		}
+		manageUpdate.delay(5)
+	 }
      function updateNowPlaying() {
         new Ajax.Request('/player/queue', {
 		   parameters: {size: 5},
@@ -28,15 +35,18 @@
 				 if (json[i].metadata.length != null) {
 				    details+=' ('+json[i].metadata.length+')';
 				 }
-			     $('playQueue').insert(
-				    new Element('div', {'class':'songinfo'+(i==0?' selected':'')})
-					  .insert(new Element('div', {'class':'songtitle'}).update(json[i].metadata.title))
-					  .insert(new Element('div', {'class':'songdetails'}).update(details))
-				 );
+				 var songInfo = new Element('div', {'class':'songinfo'+(i==0?' selected':'')})
+				 var title = new Element('div', {'class':'songtitle'}).insert(json[i].metadata.title);
+					if (i == 0 && json[i].canSkip) {
+					   title.insert("&nbsp;");
+					   title.insert(new Element('input', {'type':'button', 'onclick':'this.disabled = true; doSkip()', 'value':'skip', 'class':'actionButton'}));
+					}
+					songInfo.insert(title);
+					songInfo.insert(new Element('div', {'class':'songdetails'}).update(details));
+			     $('playQueue').insert(songInfo);
 			  }
 		   }
 	    });
-		updateNowPlaying.delay(5);
 	  }
       function doQuery() {
 		$('searchResults').update('Searching...');
@@ -66,6 +76,9 @@
       function doRequest(requestFileName) {
 	    new Ajax.Request('/player/request', {parameters: {fileName: requestFileName}});
 		tabControl.setActiveTab('requests');
+	  }
+      function doSkip() {
+	     new Ajax.Request('/player/skip', {method: 'get', onSuccess: updateNowPlaying()});
 	  }
       function updateRequests() {
         new Ajax.Request('/player/listrequests', {
@@ -97,26 +110,11 @@
 			  }
 		   }
 	    });
-		updateRequests.delay(5);
-	  }
-	  //swipe detection
-	  var xPos;
-	  var yPos;
-	  function getXY(event) {
-         xPos = event.screenX;
-         yPos = event.screenY;
-	  }
-	  function detectSwipe(event) {
-	     deltaX = xPos - event.screenX;
-	     deltaY = yPos - event.screenY;
-	     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 200) {
-		    //deltaX > 0 ? tabControl.next() : tabControl.previous();
-		 }
 	  }
    </script>
 </head>
 
-<body onmousedown="getXY(event);" onmouseup="detectSwipe(event);">
+<body>
   <div id="nav">
 	<ul id="tabMenu">
       <li class="tab"><a href="#nowPlaying">Now Playing</a></li>
@@ -129,7 +127,10 @@
 	<div id="playQueue"></div>
   </div>
   <div id="search" class="tabContent">
-	<div id="querySection"><input type="text" id="query" name="query" onKeyPress="if (event.which == 13 || event.keyCode==13) { doQuery();};" /> <input type="button" value="Search" class="requestButton" onclick="javascript: doQuery();"/></div>
+	<div id="querySection">
+	  <input type="text" id="query" name="query" onKeyPress="if (event.which == 13 || event.keyCode==13) { doQuery();};" />
+	  <input type="button" value="Search" class="actionButton" onclick="javascript: doQuery();"/>
+	</div>
 	<div id="searchResults"></div>
   </div>
   <div id="requests" class="tabContent">
@@ -137,16 +138,17 @@
   </div>
    <script language="javascript">
       tabControl = new Control.Tabs("tabMenu");
-	  /*
-	  tabControl.observe('beforeChange',function(oldContainer,newContainer){  
-         Effect.BlindUp(oldContainer, { duration: 0.25 });
+	  tabControl.observe('beforeChange',function(oldContainer, newContainer) { 
+	     if (newContainer.id == 'requests') {
+	        updateRequests();
+		    tabUpdateFunction = updateRequests;
+		 } else if (newContainer.id == 'nowPlaying') {
+            updateNowPlaying();
+		    tabUpdateFunction = updateNowPlaying;
+		 }
       });
-	  tabControl.observe('afterChange',function(newContainer){  
-         Effect.BlindDown(newContainer, { duration: 0.25 });
-      });
-	  */
-	  updateNowPlaying();
-	  updateRequests();
+	  tabUpdateFunction = updateNowPlaying;
+	  manageUpdate();
    </script>
 </body>
 </html>

@@ -44,7 +44,7 @@ public class PlayerServlet extends BaseServlet {
          }
       },
       QUEUE() {
-         @Override public Object invoke(HttpServletRequest servletRequest) {
+         @Override public Object invoke(final HttpServletRequest servletRequest) {
             List<MediaFile> queue = PartyDJ.getInstance().getPlayer().getPlayQueue();
             String sizeString = servletRequest.getParameter("size");
             if (sizeString != null) {
@@ -52,13 +52,28 @@ public class PlayerServlet extends BaseServlet {
                try {
                   int size = Integer.valueOf(sizeString).intValue();
                   if (size < queue.size()) {
-                     return queue.subList(0, size);
+                     queue = queue.subList(0, size);
                   }
                } catch(Exception e) {
                   //ignore
                }
             }
-            return queue;
+            final List<MediaFile> collection = queue;
+            return new JSONSerializable() {
+               public JSONStream toJSON() {
+                  JSONArray jsonArray = new JSONArray();
+                  for (MediaFile item : collection) {
+                     if (item != null) {
+                        JSONObject json = item.toJSON();
+                        if (jsonArray.size() == 0) { //push the can skip value into the first item in the playlist
+                           json.put("canSkip", PlaylistManager.INSTANCE.canSkip(getWho(servletRequest)));
+                        }
+                        jsonArray.add(json);
+                     }
+                  }
+                  return jsonArray;
+               }
+            };
          }
       },
       SEARCH() {
@@ -73,14 +88,14 @@ public class PlayerServlet extends BaseServlet {
             if (fileName != null) {
                MediaFile file = MediaFile.create(fileName);
                if (file != null && file.getFile() != null && file.getFile().exists()) {
-                  int estimatedWaitTime = PlaylistManager.INSTANCE.request(file, servletRequest.getRemoteAddr());
+                  int estimatedWaitTime = PlaylistManager.INSTANCE.request(file, getWho(servletRequest));
                   actualResult.put("wait", Etc.getTimeDurationDisplay(estimatedWaitTime));
                } else {
                   System.out.println(fileName + " does not exist.");
                }
             }
             return new JSONSerializable() {
-               @Override public JSONObject toJSON() {
+               @Override public JSONStream toJSON() {
                   return actualResult;
                }
             };
@@ -90,11 +105,25 @@ public class PlayerServlet extends BaseServlet {
          @Override public Object invoke(HttpServletRequest servletRequest) {
             return PlaylistManager.INSTANCE.getRequests();
          }
+      },
+      SKIP() {
+         @Override public Object invoke(HttpServletRequest servletRequest) {
+            PlaylistManager.INSTANCE.skipToNext(getWho(servletRequest));
+            return null;
+         }
       }
       ;
       
       abstract Object invoke(HttpServletRequest servletRequest);
       
+      protected String getWho(HttpServletRequest servletRequest) {
+         String who = servletRequest.getRemoteHost();
+         if (who == null || who.length() == 0) {
+            who = servletRequest.getRemoteAddr();
+         }
+         return who;
+      }
+
       static PlayerAction get(String actionName) {
          try {
             return valueOf(actionName.toUpperCase());

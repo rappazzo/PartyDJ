@@ -185,5 +185,17 @@ public class Winamp implements Player {
       }
       return status == WinampController.STOPPED;
    }
+   
+   @Override public boolean skipToNextInQueue() {
+      if (isPlaying() && getNextInQueue() != null) {
+         try {
+            WinampController.nextTrack();
+            return true;
+         } catch (InvalidHandle e) {
+            //ignore - returns false down below.
+         }
+      }
+      return false;
+   }
 
 }

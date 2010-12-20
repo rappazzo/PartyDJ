@@ -23,7 +23,7 @@ p { font-size: 10pt;  margin: 0; }
 input {border-radius: 4px; -moz-border-radius: 4px; -webkit-border-radius: 4px;}
 .selected { font-weight: bold; }
 
-.requestButton { border:#2c64bc 1px solid;
+.actionButton { border:#2c64bc 1px solid;
    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#92b1ea', endColorstr='#3b7dde'); /* for IE */
    background: -webkit-gradient(linear, left top, left bottom, from(#92b1ea), to( #3b7dde)); /* for webkit browsers */
    background: -moz-linear-gradient(top,  #92b1ea,  #3b7dde); /* for firefox 3.6+ */

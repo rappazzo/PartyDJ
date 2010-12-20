@@ -126,7 +126,7 @@ import com.partydj.util.*;
  * @author JSON.org
  * @version 2
  */
-public class JSONObject extends ForwardingMap<String, Object> {
+public class JSONObject extends ForwardingMap<String, Object> implements JSONStream {
 
    private final Map<String, Object> delegate;
    private Object peer; //Handle to wrapping facade object

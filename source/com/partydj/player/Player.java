@@ -85,4 +85,10 @@ public interface Player {
     */
    int addToQueue(MediaFile media);
    
+   /**
+    * skip to the next song in the queue if it exists and if the player is currently playing
+    * return if the operation was successful
+    */
+   boolean skipToNextInQueue();
+   
 }
