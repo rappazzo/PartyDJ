@@ -33,7 +33,7 @@ import com.partydj.util.*;
 import com.partydj.util.json.*;
 
 /**
- * 
+ * $MR TODO: make the metadata a local interface - implement with the 3rd party lib
  **/
 public class MediaFile implements JSONSerializable {
 
@@ -54,7 +54,22 @@ public class MediaFile implements JSONSerializable {
    private static final ExecutorService METADATA_PARSER_POOL = Executors.newFixedThreadPool(5, NamedThreadFactory.createDaemonFactory("Metadata Parser"));
    private static Map<String, MediaFile> CACHE = new HashMap();
    
-   public static final Comparator<MediaFile> COMPARE_BY_TITLE = new Comparator<MediaFile>() {
+   public static final Comparator<MediaFile> SORT_BY_ARTIST_ALBUM_TITLE = new Comparator<MediaFile>() {
+      @Override public int compare(MediaFile o1, MediaFile o2) {
+         String o1Comparable = o1.getMetadata() != null ? o1.getSimpleName() : null;
+         String o2Comparable = o2.getMetadata() != null ? o2.getSimpleName() : null;
+         if (o1Comparable != null && o2Comparable != null) {
+            return o1Comparable.compareTo(o2Comparable);
+         } else if (o1Comparable == null && o2Comparable != null) {
+            return 1;
+         } else if (o1Comparable != null && o2Comparable == null) {
+            return -1;
+         }
+         return 0;
+      }
+   };
+   
+   public static final Comparator<MediaFile> SORT_BY_TITLE = new Comparator<MediaFile>() {
       @Override public int compare(MediaFile o1, MediaFile o2) {
          String o1Title = o1.getMetadata() != null ? o1.getMetadata().getSongTitle() : null;
          String o2Title = o2.getMetadata() != null ? o2.getMetadata().getSongTitle() : null;

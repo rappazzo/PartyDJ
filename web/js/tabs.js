@@ -92,16 +92,16 @@ Control.Tabs = Class.create({
     setActiveTab: function(link){
         if(!link && typeof(link) == 'undefined') {
             return; }
-        if(typeof(link) == 'string'){
-            this.setActiveTab(this.links.find(function(_link){
+        if(typeof(link) == 'string') {
+            this.setActiveTab(this.links.find(function(_link) {
                 return _link.key == link;
             }));
-        }else if(typeof(link) == 'number'){
+        } else if(typeof(link) == 'number'){
             this.setActiveTab(this.links[link]);
-        }else{
+        } else  {
             if(this.notify('beforeChange',this.activeContainer,this.containers.get(link.key)) === false) {
                 return; }
-            if(this.activeContainer) {
+            if (this.activeContainer) {
                 this.options.hideFunction(this.activeContainer); }
             this.links.each(function(item){
                 (this.options.setClassOnContainer ? $(item.parentNode) : item).removeClassName(this.options.activeClassName);

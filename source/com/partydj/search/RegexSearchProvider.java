@@ -46,7 +46,7 @@ public class RegexSearchProvider implements SearchProvider {
          return Collections.unmodifiableList(indexed);
       } else {
          Pattern pattern = Pattern.compile(query, Pattern.CASE_INSENSITIVE);
-         Set<MediaFile> found = new TreeSet(MediaFile.COMPARE_BY_TITLE);
+         Set<MediaFile> found = new TreeSet(MediaFile.SORT_BY_TITLE);
          for (MediaFile file : indexed) {
             if (pattern.matcher(file.getSimpleName()).find()) {
                found.add(file);
