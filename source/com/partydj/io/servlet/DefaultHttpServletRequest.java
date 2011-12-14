@@ -67,16 +67,20 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
          byte[] buffer = new byte[1024];
 
          int bytesRead = in.readLine(buffer, 0, buffer.length);
+         if (bytesRead > 0 && in.available() > 0) { //while? ignore (return;)
+            bytesRead = in.readLine(buffer, 0, buffer.length);
+         }
 
-         String requestStart = bytesRead > 0 ? new String(buffer, 0, bytesRead).trim() : "";
-         request.method = requestStart.substring(0, requestStart.indexOf(" "));
-         request.requestedURI = requestStart.substring(requestStart.indexOf(" ") + 1, requestStart.lastIndexOf(" "));
+         String initialLine = bytesRead > 0 ? new String(buffer, 0, bytesRead) : "GET / HTTP/1.1";
+         String[] initialLineParts = initialLine.split("\\s+");
+         request.method = initialLineParts[0];
+         request.requestedURI = initialLineParts[1];
          try {
             request.requestedURI = URLDecoder.decode(request.requestedURI, CharsetConstants.UTF8.name());
          } catch (UnsupportedEncodingException e) {
             request.requestedURI = URLDecoder.decode(request.requestedURI);
             if (request.requestedURI == null) {
-               request.requestedURI = requestStart.substring(requestStart.indexOf(" ") + 1, requestStart.lastIndexOf(" "));
+               request.requestedURI = initialLineParts[1];
             }
          }
          String[] parts = request.requestedURI.split("\\?", 2);
@@ -89,19 +93,25 @@ public class DefaultHttpServletRequest implements HttpServletRequest {
                request.parameterMap.put(kAndV[0], kAndV.length > 1 ? kAndV[1] : null);
             }
          }
-         request.httpVersionInfo = requestStart.substring(requestStart.lastIndexOf(" ") + 1);
+         request.httpVersionInfo = initialLineParts[2];
 
+         String prevHeaderKey = null;
          while ((bytesRead = in.readLine(buffer, 0, buffer.length)) != -1) {
             String headerElement = new String(buffer, 0, bytesRead).trim();
             if (headerElement == null || headerElement.length() == 0) {
                //an empty line signifies the end of the header
                break;
             }
-            int splitIndex = headerElement.indexOf(":");
-            if (splitIndex >= 0) {
-               String key = URLDecoder.decode(headerElement.substring(0, splitIndex), CharsetConstants.UTF8.name());
-               String value = URLDecoder.decode(headerElement.substring(splitIndex + 2), CharsetConstants.UTF8.name());
+            String[] headerParts = headerElement.split(":", 2);
+            if (headerParts.length == 2) {
+               String key = URLDecoder.decode(headerParts[0].trim(), CharsetConstants.UTF8.name());
+               prevHeaderKey = key;
+               String value = URLDecoder.decode(headerParts[1].trim(), CharsetConstants.UTF8.name());
                request.headerMap.put(key, value);
+            } else if (prevHeaderKey != null) {
+               //part of the previous header
+               String value = URLDecoder.decode(headerParts[0].trim(), CharsetConstants.UTF8.name());
+               request.headerMap.put(prevHeaderKey, request.headerMap.get(prevHeaderKey) + value);
             }
          }
 

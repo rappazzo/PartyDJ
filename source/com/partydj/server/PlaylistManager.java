@@ -68,7 +68,8 @@ public enum PlaylistManager {
          }
          songPool = new CopyOnWriteArrayList(songPool);
       }
-      queueNext(MIN_QUEUE_SIZE - player.getPlayQueueSize());
+      int next = queueNext(MIN_QUEUE_SIZE - player.getPlayQueueSize());
+      CHECKER_POOL.schedule(CHECKER, next, TimeUnit.SECONDS);
    }
    
    static final FileFilter POOL_FILE_FILTER = new FileFilter() {
@@ -248,7 +249,7 @@ public enum PlaylistManager {
       return currentRequestCount.intValue();
    }
    
-   protected final void queueNext(int size) {
+   protected final int queueNext(int size) {
       boolean added = false;
       int next = 5;
       Player player = PartyDJ.getInstance().getPlayer();
@@ -265,8 +266,10 @@ public enum PlaylistManager {
       if (!added) {
          next = 15;
       }
-      player.ensurePlaying();
-      CHECKER_POOL.schedule(CHECKER, next, TimeUnit.SECONDS);
+      if (!player.isPaused()) {
+         player.ensurePlaying();
+      }
+      return next;
    }
    
    private boolean allowQueue(MediaFile file) {
@@ -300,8 +303,28 @@ public enum PlaylistManager {
 
    class QueueChecker implements Runnable {
       @Override public void run() {
-         Player player = PartyDJ.getInstance().getPlayer();
-         queueNext(MIN_QUEUE_SIZE - player.getPlayQueueSize());
+         int next = 15;
+         try {
+            Player player = PartyDJ.getInstance().getPlayer();
+            next = queueNext(MIN_QUEUE_SIZE - player.getPlayQueueSize());
+         } catch (Throwable t) {
+            try {
+               Player player = PartyDJ.getInstance().getPlayer();
+               if (!player.isAvailable()) {
+                  player.ensureAvailable();
+                  System.out.println("Player was not available, but not is ready.  Requeueing in 2 seconds.");
+                  next = 2;
+               } else {
+                  System.out.println("MAJOR error in queue checker.  Rescheduling for 1 minute from now and crossing fingers.");
+                  next = 60;
+               }
+            } catch (Exception e) {
+               System.out.println("Player cannot be made available!  Maybe someone will do somethign to change that in the next 5 minutes.");
+               next = 300;
+            }
+         } finally {
+            CHECKER_POOL.schedule(CHECKER, next, TimeUnit.SECONDS);
+         }
       }
    }
    

@@ -12,5 +12,6 @@
 	<classpathentry kind="lib" path="lib/org.apache.lucene/lucene-core-3.0.3.jar" sourcepath="lib/org.apache.lucene/lucene-3.0.3/src"/>
 	<classpathentry kind="lib" path="lib/org.apache.commons/commons-codec-1.4.jar" sourcepath="lib/org.apache.commons/commons-codec-1.4-sources.jar"/>
 	<classpathentry kind="lib" path="lib/org.limewire.collection.trie/Trie.jar"/>
+	<classpathentry kind="lib" path="lib/org.dnsjava/dnsjava-2.0.0.jar" sourcepath="lib/org.dnsjava/dnsjava-2.0.0.zip"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>

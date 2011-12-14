@@ -91,7 +91,28 @@ public class Winamp implements Player {
          } catch (InvalidHandle e) {
             throw new RuntimeException("Exception issuing play command to winamp", e);
          }
+      } else if (isStuck()) {
+         try {
+            System.out.println("Winamp appears to be stuck (Track: "+getCurrentlyPlaying().toString()+").  Skipping to the next track.");
+            WinampController.nextTrack();
+         } catch (InvalidHandle e) {
+            throw new RuntimeException("Exception issuing play command to winamp", e);
+         }
       }
+   }
+   
+   private boolean isStuck() {
+      try {
+         int instant = WinampController.getTime(WinampController.CURRENTTIME);
+         Thread.sleep(100);
+         int nextInstant = WinampController.getTime(WinampController.CURRENTTIME);
+         if (instant == nextInstant) {
+            return true;
+         }
+      } catch (Exception e) {
+         //ignore
+      }
+      return false;
    }
 
    @Override public MediaFile getCurrentlyPlaying() {
@@ -170,7 +191,7 @@ public class Winamp implements Player {
       int status = -1;
       try {
          status = WinampController.getStatus();
-      } catch (InvalidHandle e) {
+      } catch (Exception e) {
          //ignore
       }
       return status == WinampController.PLAYING;
