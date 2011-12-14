@@ -22,10 +22,10 @@
  **/
 package com.partydj.server;
 
-import java.io.*;
 import com.partydj.io.*;
 import com.partydj.player.*;
 import com.partydj.search.*;
+import com.partydj.util.*;
 
 /**
  * 
@@ -76,6 +76,7 @@ public class PartyDJ {
    public void run() {
       PlaylistManager.INSTANCE.start();
       Http.create().start();
+      DNS.create(Config.config().getProperty("dns.name"), Config.config().getProperty("dns.ip"));
 
       try {
          synchronized (monitor) {
