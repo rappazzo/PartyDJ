@@ -76,7 +76,9 @@ public class PartyDJ {
    public void run() {
       PlaylistManager.INSTANCE.start();
       Http.create().start();
-      DNS.create(Config.config().getProperty("dns.name"), Config.config().getProperty("dns.ip"));
+      if (Config.config().getProperty("dns.name") != null && Config.config().getProperty("dns.ip") != null) {
+         DNS.create(Config.config().getProperty("dns.name"), Config.config().getProperty("dns.ip"));
+      }
 
       try {
          synchronized (monitor) {
